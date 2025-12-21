@@ -1,51 +1,36 @@
-# Empotrados_p4
+# Practice 4: Follow line
 
-## ESP32
+This project implements a distributed embedded system composed of an Arduino and an ESP32, where each device has clearly separated responsibilities:
 
-This ESP32 code serves as the IoT communication bridge for a line-following robot project. It handles WiFi connectivity, MQTT messaging, and serial communication with an Arduino that controls the physical robot.
+- **Arduino**: real-time robot control (line following, motors, sensors, and obstacle detection).
+- **ESP32**: high-level communication (WiFi + MQTT) and event reporting to a remote server.
 
-```cpp
-send_mqtt_message()
-```
-Formats robot events into standardized JSON messages for the MQTT server.
+This separation ensures that time-critical control tasks are not affected by network latency or connectivity issues.
 
-```cpp
-read_serial2_send()
-```
-Listens to Arduino events and forwards them as MQTT messages with appropriate formatting.
+## Arduino - ESP32 Serial Communication
 
-```cpp
-handle_start_lap()
-```
-Coordinates the start of a lap between the ESP32, Arduino, and MQTT server.
+A **custom, lightweight serial protocol** is used to exchange messages efficiently:
 
-```cpp
-void loop()
-```
-The loop prioritizes connection management, then message processing, then periodic tasks.
+- Each event is sent as:
+  1. A **numeric action code**
+  2. Optionally, a **second line containing a parameter**
 
+This approach avoids complex parsing and minimizes latency.
 
-## Arduino
+### Implemented Action Codes
 
-```cpp
-set_motors(int left, int right) 
-```
-Abstracts motor control with safety constraints and direction handling.
+| Code | Action |
+|-----:|--------|
+| 0 | Start confirmation |
+| 1 | END_LAP |
+| 2 | OBSTACLE_DETECTED |
+| 3 | LINE_LOST |
+| 5 | INIT_LINE_SEARCH |
+| 6 | STOP_LINE_SEARCH |
+| 7 | LINE_FOUND |
+| 8 | VISIBLE_LINE |
 
-```cpp
-read_distance()
-```
-Provides filtered, reliable distance measurements using median filtering.
-
-```cpp
-handle_line_detection()
-```
-Implements a state machine for precise line following with 8 different sensor combinations.
-
-```cpp
-handle_obstacle_detection()
-```
-Implements progressive braking based on obstacle distance for safe stopping.
+Example:
 
 
 ## Videos

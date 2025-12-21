@@ -89,6 +89,17 @@ The system uses a flag-based state machine to ensure safe operation. This preven
 - Restarting after a critical stop
 - Overlapping control action
 
+## Operating System and Task Scheduling
+
+The system does not use FreeRTOS. Both the Arduino and the ESP32 run on a classic loop-based execution model. Task scheduling is handled manually using `millis()` and fixed time intervals.
+This approach was chosen to keep the system simple and deterministic.
+
+## Conclusion
+
+This implementation prioritizes simplicity, reliability, and real-time safety.
+By avoiding unnecessary complexity such as PID controllers or an RTOS,
+the system remains easy to debug while still meeting all functional requirements.
+
 
 ## Videos
 

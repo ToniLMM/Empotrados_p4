@@ -9,11 +9,11 @@ This separation ensures that time-critical control tasks are not affected by net
 
 ## Arduino - ESP32 Serial Communication
 
-A **custom, lightweight serial protocol** is used to exchange messages efficiently:
+A custom, lightweight serial protocol is used to exchange messages efficiently:
 
 - Each event is sent as:
-  1. A **numeric action code**
-  2. Optionally, a **second line containing a parameter**
+  - A **numeric action code**
+  - Optionally, a **second line containing a parameter**
 
 This approach avoids complex parsing and minimizes latency.
 
@@ -21,7 +21,7 @@ This approach avoids complex parsing and minimizes latency.
 
 | Code | Action |
 |-----:|--------|
-| 0 | Start confirmation |
+| 0 | START_LAP |
 | 1 | END_LAP |
 | 2 | OBSTACLE_DETECTED |
 | 3 | LINE_LOST |
@@ -30,7 +30,64 @@ This approach avoids complex parsing and minimizes latency.
 | 7 | LINE_FOUND |
 | 8 | VISIBLE_LINE |
 
-Example:
+## WiFi and MQTT Communication (ESP32)
+
+The ESP32 connects to a WiFi network and publishes messages to a remote MQTT broker.
+
+Each serial event received from the Arduino is converted into a JSON-formatted MQTT message containing:
+
+- `team_name`
+- `id`
+- `action`
+- Associated parameters (`time`, `distance`, `value`)
+
+## Lap Control and Synchronization
+
+The lap start is synchronized between Arduino and ESP32:
+
+1. ESP32 sends a start request (1) via UART.
+2. Arduino confirms readiness by responding with 0.
+3. ESP32 publishes START_LAP and starts timing.
+
+This ensures that a lap never starts unless WiFi and MQTT connections are active.
+
+## Robot Control (Arduino)
+
+The robot uses three analog infrared sensors (left, center, right).
+
+- A fixed threshold is applied to detect the line.
+- Control logic is rule-based, not PID-based.
+
+No PID controller is used. Instead, motor speeds are adjusted using conditional logic depending on which sensors detect the line. This simplifies implementation and proved sufficient for the track.
+
+Examples:
+
+- Center sensor active -> straight motion
+- Left sensor active -> corrective right turn
+- All sensors lost -> recovery turn based on last valid detection
+
+## Obstacle Detection and Braking
+
+An ultrasonic distance sensor is used with fast polling and basic filtering:
+
+- Valid distance range: 2–30 cm
+- Last valid measurement is stored
+- Distance is sampled every 15 ms
+
+| Distance | Behavior                            |
+| -------: | ----------------------------------- |
+|   5–8 cm | Emergency braking + lap termination |
+|  9–12 cm | Strong speed reduction              |
+| 13–18 cm | Moderate speed reduction            |
+| 19–30 cm | Slight speed adjustment             |
+
+## State Management
+
+The system uses a flag-based state machine to ensure safe operation. This prevents invalid transitions such as:
+
+- Sending events after lap completion
+- Restarting after a critical stop
+- Overlapping control action
 
 
 ## Videos
